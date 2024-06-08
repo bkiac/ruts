@@ -150,6 +150,44 @@ describe.concurrent("andThen", () => {
 		const a = TestErr<number, string>("early error");
 		expect(a.andThen((value) => Ok(value + 1)).unwrapErr()).toEqual(a.unwrapErr());
 	});
+
+	it("can map primitive error type", () => {
+		const result = TestOk<number, "foo">(1).andThen((num) => {
+			if (num === null) {
+				return Err("bar" as const);
+			}
+			if (num !== 1) {
+				return Err("baz" as const);
+			}
+			return Ok(num);
+		});
+		expectTypeOf(result).toEqualTypeOf<Result<number, "foo" | "bar" | "baz">>();
+	});
+
+	it("can map non-primitive error type", () => {
+		class Foo extends ErrorWithTag {
+			readonly tag = "foo";
+		}
+
+		class Bar extends ErrorWithTag {
+			readonly tag = "bar";
+		}
+
+		class Baz extends ErrorWithTag {
+			readonly tag = "baz";
+		}
+
+		const result = TestOk<number, Foo>(1).andThen((num) => {
+			if (num === null) {
+				return Err(new Bar());
+			}
+			if (num !== 1) {
+				return Err(new Baz());
+			}
+			return Ok(num);
+		});
+		expectTypeOf(result).toEqualTypeOf<Result<number, Foo | Bar | Baz>>();
+	});
 });
 
 describe.concurrent("andThenAsync", () => {
